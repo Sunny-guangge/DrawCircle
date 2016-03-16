@@ -23,6 +23,7 @@
 	// Do any additional setup after loading the view, typically from a nib.
     
     BHAmountView *view = [[BHAmountView alloc] initWithFrame:CGRectMake(0, 64, self.view.frame.size.width, self.view.frame.size.width)];
+    view.value = 8888.88;
     [self.view addSubview:view];
 }
 
