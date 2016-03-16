@@ -8,8 +8,18 @@
 
 #import <UIKit/UIKit.h>
 
+@protocol BHAmountViewDelegate <NSObject>
+
+- (void)didClickAmountButton;
+
+@end
+
 @interface BHAmountView : UIView
 
 - (void)updateUserData;
+
+@property (nonatomic,assign) id<BHAmountViewDelegate> delegate;
+
+@property (nonatomic,assign) CGFloat value;
 
 @end

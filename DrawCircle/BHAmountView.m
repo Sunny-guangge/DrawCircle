@@ -18,6 +18,11 @@
 @end
 
 @implementation BHAmountView
+{
+    UIBezierPath *path;
+    CAShapeLayer *arcLayer;
+    NSTimer *_totalMoneyAmountLabelAnimationTimer;
+}
 
 - (id)initWithFrame:(CGRect)frame
 {
@@ -36,23 +41,32 @@
     return self;
 }
 
+- (void)setValue:(CGFloat)value
+{
+    _value = value;
+    
+    [self setNumberTextOfLabel:self.amountLabel WithAnimationForValueContent:value];
+}
+
+#pragma mark - 刷新页面
 - (void)updateUserData
 {
-    [self.amountLineView removeFromSuperview];
+    [path removeAllPoints];
+    arcLayer.path = path.CGPath;
+    self.amountLabel.text = @"0.0";
     
-    [self addSubview:self.amountLineView];
-    [self addSubview:self.amountLabel];
-    [self addSubview:self.amountButton];
-    
+    [self.amountLineView.layer addSublayer:arcLayer];
+    [self setNumberTextOfLabel:self.amountLabel WithAnimationForValueContent:8888.88];
     [self intiUIOfView];
 }
 
+#pragma mark - 动画画圆的方法
 -(void)intiUIOfView
 {
-    UIBezierPath *path=[UIBezierPath bezierPath];
+    path=[UIBezierPath bezierPath];
     
     [path addArcWithCenter:CGPointMake(self.frame.size.width/2,self.frame.size.height/2) radius:100 startAngle:0.7*M_PI endAngle:0.30 * M_PI  clockwise:YES];
-    CAShapeLayer *arcLayer=[CAShapeLayer layer];
+    arcLayer=[CAShapeLayer layer];
     arcLayer.path=path.CGPath;//46,169,230
     arcLayer.strokeColor = [UIColor redColor].CGColor;
     arcLayer.lineWidth=3;
@@ -72,9 +86,70 @@
     [layer addAnimation:bas forKey:@"key"];
 }
 
+#pragma mark - BHAmountViewDelegate
+- (void)didClickAmountButton
+{
+    
+    [self updateUserData];
+    
+    if ([self.delegate respondsToSelector:@selector(didClickAmountButton)]) {
+        
+        [self.delegate didClickAmountButton];
+        
+    }
+}
+
+#pragma mark - UILabel数字滚动动画
+- (void)setNumberTextOfLabel:(UILabel *)label WithAnimationForValueContent:(CGFloat)value
+{
+    CGFloat lastValue = [label.text floatValue];
+    CGFloat delta = value - lastValue;
+    if (delta == 0) return;
+    
+    if (delta > 0) {
+        
+        CGFloat ratio = value / 60.0;
+        
+        NSDictionary *userInfo = @{@"label" : label,
+                                   @"value" : @(value),
+                                   @"ratio" : @(ratio)
+                                   };
+        NSTimer *timer = [NSTimer scheduledTimerWithTimeInterval:0.02 target:self selector:@selector(setupLabel:) userInfo:userInfo repeats:YES];
+        if (label == self.amountLabel) {
+            _totalMoneyAmountLabelAnimationTimer = timer;
+        }
+    }
+}
 
 
 
+- (void)setupLabel:(NSTimer *)timer
+{
+    NSDictionary *userInfo = timer.userInfo;
+    UILabel *label = userInfo[@"label"];
+    CGFloat value = [userInfo[@"value"] floatValue];
+    CGFloat ratio = [userInfo[@"ratio"] floatValue];
+    
+    static int flag = 1;
+    CGFloat lastValue = [label.text floatValue];
+    CGFloat randomDelta = (arc4random_uniform(2) + 1) * ratio;
+    CGFloat resValue = lastValue + randomDelta;
+    
+    if ((resValue >= value) || (flag == 50)) {
+        label.text = [NSString stringWithFormat:@"%.2f", value];
+        flag = 1;
+        [timer invalidate];
+        timer = nil;
+        return;
+    } else {
+        label.text = [NSString stringWithFormat:@"%.2f", resValue];
+    }
+    
+    flag++;
+    
+}
+
+#pragma mark - Getter
 - (UIView *)amountLineView
 {
     if (_amountLineView == nil) {
@@ -101,10 +176,6 @@
     return _amountButton;
 }
 
-- (void)didClickAmountButton
-{
-    
-}
 
 - (UILabel *)amountLabel
 {
